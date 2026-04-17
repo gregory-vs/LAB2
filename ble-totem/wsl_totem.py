@@ -26,6 +26,10 @@ class BeaconEvent(BaseModel):
 @app.post("/ingest")
 def ingest(event: BeaconEvent) -> dict[str, str]:
     LAST_SEEN[event.beacon_id] = datetime.now(timezone.utc)
+    print(
+        f"[INGEST] beacon={event.beacon_id} rssi={event.rssi} "
+        f"uuid={event.service_uuid} payload={event.payload_hex}"
+    )
     return {"status": "ok"}
 
 
