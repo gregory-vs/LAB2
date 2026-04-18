@@ -17,6 +17,7 @@ SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab"
 RSSI_ENTER_THRESHOLD = -75
 RSSI_EXIT_THRESHOLD = -80
 PRESENCE_TIMEOUT_SECONDS = 5
+ENABLE_TOTEM_FORWARDING = False
 TOTEM_INGEST_URL = "http://127.0.0.1:8000/ingest"
 
 LAST_SEEN: dict[str, datetime] = {}
@@ -42,6 +43,8 @@ def _update_range_state(beacon_key: str, in_range: bool, rssi: int, reason: str)
 
 
 def _enqueue_event(event: dict[str, str | int]) -> None:
+    if not ENABLE_TOTEM_FORWARDING:
+        return
     try:
         EVENT_QUEUE.put_nowait(event)
     except asyncio.QueueFull:
@@ -136,17 +139,21 @@ async def main() -> None:
         f"ENTER>={RSSI_ENTER_THRESHOLD} dBm, "
         f"EXIT>={RSSI_EXIT_THRESHOLD} dBm, "
         f"timeout={PRESENCE_TIMEOUT_SECONDS}s, "
-        f"totem={TOTEM_INGEST_URL}. "
+        f"forwarding={'ON' if ENABLE_TOTEM_FORWARDING else 'OFF'}. "
         "Pressione Ctrl+C para parar."
     )
     watchdog = asyncio.create_task(_presence_watchdog())
-    sender = asyncio.create_task(_sender_worker())
+    sender = None
+    if ENABLE_TOTEM_FORWARDING:
+        print(f"[{_iso_now()}] Encaminhando eventos para: {TOTEM_INGEST_URL}")
+        sender = asyncio.create_task(_sender_worker())
     try:
         while True:
             await asyncio.sleep(1)
     finally:
         watchdog.cancel()
-        sender.cancel()
+        if sender is not None:
+            sender.cancel()
         await scanner.stop()
 
 
