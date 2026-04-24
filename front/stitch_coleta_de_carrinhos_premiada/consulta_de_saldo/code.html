@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-background": "#191c1e",
+                    "background": "#f7f9fb",
+                    "inverse-on-surface": "#eff1f3",
+                    "surface-tint": "#005bc0",
+                    "surface-dim": "#d8dadc",
+                    "surface-container": "#eceef0",
+                    "primary-fixed": "#d8e2ff",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "primary": "#005bbf",
+                    "on-surface-variant": "#414754",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#565e74",
+                    "primary-fixed-dim": "#adc7ff",
+                    "on-surface": "#191c1e",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#d5e3fc",
+                    "surface-container-high": "#e6e8ea",
+                    "inverse-primary": "#adc7ff",
+                    "on-primary-fixed-variant": "#004493",
+                    "inverse-surface": "#2d3133",
+                    "on-secondary-container": "#57657a",
+                    "on-tertiary-container": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#b9c7df",
+                    "surface-variant": "#e0e3e5",
+                    "on-secondary-fixed": "#0d1c2e",
+                    "surface-bright": "#f7f9fb",
+                    "primary-container": "#1a73e8",
+                    "outline-variant": "#c1c6d6",
+                    "on-primary-fixed": "#001a41",
+                    "on-primary-container": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#bec6e0",
+                    "on-tertiary-fixed-variant": "#3f465c",
+                    "outline": "#727785",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#dae2fd",
+                    "on-tertiary-fixed": "#131b2e",
+                    "surface": "#f7f9fb",
+                    "on-secondary-fixed-variant": "#3a485b",
+                    "secondary-fixed": "#d5e3fc",
+                    "secondary": "#515f74",
+                    "tertiary-container": "#6f768d",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "unit": "4px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "margin-mobile": "16px",
+                    "md": "16px",
+                    "margin-desktop": "48px"
+            },
+            "fontFamily": {
+                    "h1": ["Inter"],
+                    "body-md": ["Inter"],
+                    "h3": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "h2": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "h1": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "h3": ["20px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "h2": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+<style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row">
+<aside class="hidden md:flex flex-col h-screen w-64 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 sticky top-0 p-4 gap-2">
+<div class="flex items-center gap-3 px-4 py-6">
+<span class="material-symbols-outlined text-blue-700 text-2xl" data-icon="luggage">luggage</span>
+<span class="text-lg font-bold text-blue-700">CartCollect</span>
+</div>
+<nav class="flex flex-col gap-1 mt-4">
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-sm font-medium font-inter">Collection</span>
+</a>
+<a class="flex items-center gap-3 bg-blue-600 text-white rounded-lg px-4 py-3 shadow-md shadow-blue-200 dark:shadow-none transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="text-sm font-medium font-inter">Balance</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="redeem">redeem</span>
+<span class="text-sm font-medium font-inter">Catalog</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-sm font-medium font-inter">Activity</span>
+</a>
+</nav>
+</aside>
+<div class="flex-1 flex flex-col min-w-0">
+<header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm flex justify-between items-center w-full px-4 h-16 z-50 docked full-width top-0 sticky">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400" data-icon="luggage">luggage</span>
+<h1 class="text-xl font-black text-blue-700 dark:text-blue-500 font-inter antialiased tracking-tight">CartCollect</h1>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto px-4 md:px-margin-desktop py-lg pb-32">
+<div class="max-w-4xl mx-auto space-y-lg">
+<section class="bg-white p-lg rounded-xl border border-outline-variant shadow-sm space-y-md">
+<div class="flex flex-col gap-sm">
+<h2 class="font-h3 text-h3">Identificação</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Identifique-se para consultar seu saldo e histórico.</p>
+</div>
+<div class="flex flex-col gap-md">
+<div class="flex p-1 bg-surface-container rounded-lg w-full max-w-sm">
+<button class="flex-1 py-2 text-label-md font-label-md bg-white text-primary rounded-md shadow-sm">CPF</button>
+<button class="flex-1 py-2 text-label-md font-label-md text-on-surface-variant">Passaporte</button>
+</div>
+<div class="flex flex-col md:flex-row gap-md">
+<div class="flex-1">
+<input class="w-full h-12 px-md border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-surface-container-lowest" placeholder="000.000.000-00" type="text"/>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-xl h-12 rounded-lg hover:bg-primary/90 active:scale-95 transition-all">
+                Consultar Pontos
+            </button>
+</div>
+</div>
+</section>
+<div class="opacity-50 pointer-events-none grayscale-[0.5]">
+<div class="space-y-lg">
+<section class="bg-primary-container text-on-primary-container p-xl rounded-xl shadow-md relative overflow-hidden">
+<div class="relative z-10">
+<p class="font-label-md text-label-md opacity-90 mb-xs uppercase tracking-wider">Saldo de Pontos</p>
+<div class="flex items-baseline gap-sm">
+<span class="font-h1 text-[64px] leading-none font-black tracking-tighter">250</span>
+<span class="font-h3 text-h3 opacity-90">pontos</span>
+</div>
+<div class="mt-lg flex gap-md">
+<button class="bg-white text-primary font-label-md text-label-md px-md py-sm rounded-lg flex items-center gap-xs active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]" data-icon="redeem">redeem</span>
+                        Resgatar agora
+                    </button>
+</div>
+</div>
+<div class="absolute -right-8 -bottom-8 opacity-10">
+<span class="material-symbols-outlined text-[180px]" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+</div>
+</section>
+<section class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="bg-white p-lg rounded-xl border border-outline-variant shadow-sm">
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="info">info</span>
+</div>
+<h2 class="font-h3 text-h3">Como funciona</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">
+                    Ajude a manter o aeroporto organizado e ganhe recompensas exclusivas.
+                </p>
+<div class="bg-surface-container p-md rounded-lg flex items-center gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="shopping_cart" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
+<span class="font-label-md text-label-md">1 carrinho devolvido = 1 ponto</span>
+</div>
+</div>
+<div class="bg-white p-lg rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<h2 class="font-h3 text-h3 mb-xs">Próximo Nível</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Você está a 50 pontos de se tornar "Elite Collector".</p>
+</div>
+<div class="space-y-sm">
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 83%"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>250 pts</span>
+<span>300 pts</span>
+</div>
+</div>
+</div>
+</section>
+<section class="space-y-md">
+<div class="flex justify-between items-center">
+<h2 class="font-h2 text-h2">Atividades Recentes</h2>
+<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
+                    Ver tudo <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="bg-white border border-outline-variant rounded-xl divide-y divide-outline-variant overflow-hidden">
+<div class="p-md flex items-center gap-md hover:bg-surface-container-low transition-colors">
+<div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="add_task">add_task</span>
+</div>
+<div class="flex-1">
+<p class="font-label-md text-label-md text-on-surface">Coleção Terminal A</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Hoje, 14:20</p>
+</div>
+<div class="text-right">
+<p class="font-h3 text-h3 text-green-600">+12</p>
+</div>
+</div>
+<div class="p-md flex items-center gap-md hover:bg-surface-container-low transition-colors">
+<div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="add_task">add_task</span>
+</div>
+<div class="flex-1">
+<p class="font-label-md text-label-md text-on-surface">Coleção Estacionamento P3</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Ontem, 09:15</p>
+</div>
+<div class="text-right">
+<p class="font-h3 text-h3 text-green-600">+8</p>
+</div>
+</div>
+<div class="p-md flex items-center gap-md hover:bg-surface-container-low transition-colors">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="redeem">redeem</span>
+</div>
+<div class="flex-1">
+<p class="font-label-md text-label-md text-on-surface">Resgate: Vale-Café</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">12 Out, 16:45</p>
+</div>
+<div class="text-right">
+<p class="font-h3 text-h3 text-error">-30</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-[10px] font-semibold font-inter uppercase tracking-wider">Collect</span>
+</a>
+<a class="flex flex-col items-center justify-center text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 rounded-xl px-3 py-1 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="text-[10px] font-semibold font-inter uppercase tracking-wider">Points</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="redeem">redeem</span>
+<span class="text-[10px] font-semibold font-inter uppercase tracking-wider">Rewards</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-[10px] font-semibold font-inter uppercase tracking-wider">History</span>
+</a>
+</nav>
+</div>
+</body></html>
