@@ -14,8 +14,7 @@ from bleak import BleakScanner
 
 
 SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab"
-RSSI_ENTER_THRESHOLD = -75
-RSSI_EXIT_THRESHOLD = -80
+RSSI_RANGE_THRESHOLD = -75
 PRESENCE_TIMEOUT_SECONDS = 5
 ENABLE_TOTEM_FORWARDING = False
 TOTEM_INGEST_URL = "http://127.0.0.1:8000/ingest"
@@ -35,7 +34,7 @@ def _update_range_state(beacon_key: str, in_range: bool, rssi: int, reason: str)
     IN_RANGE[beacon_key] = in_range
 
     if previous is None or previous != in_range:
-        state_text = "NO RAIO" if in_range else "FORA DO RAIO"
+        state_text = "NO RAIO"
         print(
             f"[{_iso_now()}] Beacon {beacon_key}: {state_text} "
             f"(RSSI={rssi} dBm, motivo={reason})"
@@ -76,11 +75,7 @@ def _detection_callback(device, advertisement_data) -> None:
     LAST_SEEN[beacon_key] = datetime.now(timezone.utc)
     LAST_RSSI[beacon_key] = rssi
 
-    was_in_range = IN_RANGE.get(beacon_key, False)
-    if was_in_range:
-        in_range = rssi >= RSSI_EXIT_THRESHOLD
-    else:
-        in_range = rssi >= RSSI_ENTER_THRESHOLD
+    in_range = rssi >= RSSI_RANGE_THRESHOLD
 
     _update_range_state(beacon_key, in_range, rssi, reason=f"service_data={payload.hex()}")
     _enqueue_event(
@@ -136,8 +131,7 @@ async def main() -> None:
     await scanner.start()
     print(
         "Scanner BLE iniciado. "
-        f"ENTER>={RSSI_ENTER_THRESHOLD} dBm, "
-        f"EXIT>={RSSI_EXIT_THRESHOLD} dBm, "
+        f"RANGE>={RSSI_RANGE_THRESHOLD} dBm, "
         f"timeout={PRESENCE_TIMEOUT_SECONDS}s, "
         f"forwarding={'ON' if ENABLE_TOTEM_FORWARDING else 'OFF'}. "
         "Pressione Ctrl+C para parar."

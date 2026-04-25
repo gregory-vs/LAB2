@@ -1,9 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}LAB2 - Home{% endblock %}
+{% block title %}CartCollect - Coleta{% endblock %}
 
 {% block content %}
-  <main class="card">
-    <h1>{{ message }}</h1>
-  </main>
+  <section class="hero-card">
+    <div>
+      <h1>Coleta de Carrinhos</h1>
+      <p>Registre uma coleta de forma rápida e continue acumulando pontos.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Nova Coleta</h2>
+    <p class="muted">Identifique o usuário e informe o ID do carrinho.</p>
+
+    <form class="stack-md">
+      <div class="segment">
+        <button class="btn btn-secondary is-selected" type="button">CPF</button>
+        <button class="btn btn-ghost" type="button">Passaporte</button>
+      </div>
+
+      <label class="field">
+        <span>Número de identificação</span>
+        <input type="text" placeholder="000.000.000-00" />
+      </label>
+
+      <label class="field">
+        <span>ID do carrinho (QR Code)</span>
+        <div class="field-inline">
+          <input type="text" placeholder="Escaneie ou digite o ID..." />
+          <button class="btn btn-secondary icon-btn" type="button" aria-label="Abrir câmera">
+            <span class="material-symbols-outlined">photo_camera</span>
+          </button>
+        </div>
+      </label>
+
+      <button class="btn btn-primary btn-block" type="submit">Confirmar Coleta</button>
+    </form>
+  </section>
+
+  <section class="kpi-grid">
+    <article class="kpi-card">
+      <p class="kpi-label">Coletas hoje</p>
+      <p class="kpi-value">{{ stats.today_collections }}</p>
+    </article>
+    <article class="kpi-card">
+      <p class="kpi-label">Recompensas pendentes</p>
+      <p class="kpi-value">{{ stats.pending_rewards }} pts</p>
+    </article>
+  </section>
 {% endblock %}

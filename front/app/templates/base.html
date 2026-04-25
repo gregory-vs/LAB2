@@ -4,9 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}LAB2 - Front{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
   </head>
   <body>
-    {% block content %}{% endblock %}
+    <header class="topbar">
+      <a class="brand" href="{{ url_for('home.home') }}">
+        <span class="material-symbols-outlined">luggage</span>
+        <strong>CartCollect</strong>
+      </a>
+      <nav class="desktop-nav">
+        <a class="{{ 'is-active' if page == 'home' else '' }}" href="{{ url_for('home.home') }}">Coleta</a>
+        <a class="{{ 'is-active' if page == 'saldo' else '' }}" href="{{ url_for('home.consulta_saldo') }}">Saldo</a>
+        <a class="{{ 'is-active' if page == 'catalogo' else '' }}" href="{{ url_for('home.catalogo_premios') }}">Catálogo</a>
+      </nav>
+    </header>
+
+    <main class="page-container">{% block content %}{% endblock %}</main>
+
+    <nav class="mobile-nav">
+      <a class="{{ 'is-active' if page == 'home' else '' }}" href="{{ url_for('home.home') }}">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span>Coleta</span>
+      </a>
+      <a class="{{ 'is-active' if page == 'saldo' else '' }}" href="{{ url_for('home.consulta_saldo') }}">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span>Saldo</span>
+      </a>
+      <a class="{{ 'is-active' if page == 'catalogo' else '' }}" href="{{ url_for('home.catalogo_premios') }}">
+        <span class="material-symbols-outlined">redeem</span>
+        <span>Prêmios</span>
+      </a>
+    </nav>
   </body>
 </html>

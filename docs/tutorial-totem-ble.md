@@ -8,7 +8,7 @@ No cenário deste projeto, o ESP32 atua como **beacon BLE** e anuncia pacotes co
 
 O sistema foi dividido em 2 processos Python:
 
-1. `windows_scanner.py` (executa no Windows): escuta anúncios BLE e filtra pelo `SERVICE_UUID`.
+1. `windows_scanner.py` (executa no Windows): escuta anúncios BLE, filtra pelo `SERVICE_UUID` e envia cada evento para o totem via HTTP.
 2. `wsl_totem.py` (executa no WSL/Linux): recebe eventos e mantém estado de presença (`online/offline`).
 
 ## 2. Estrutura dos arquivos
@@ -99,6 +99,7 @@ Se encontrar anúncios com o UUID configurado, o scanner imprime mudanças de es
 
 - `NO RAIO`: beacon considerado dentro do raio.
 - `FORA DO RAIO`: beacon fora do raio (RSSI fraco ou timeout sem novos pacotes).
+- Se o encaminhamento estiver ativado: `Enviado ao totem` / `Totem indisponível`.
 
 ## 5.3. Configurar o raio no scanner
 
@@ -108,6 +109,8 @@ No arquivo `windows_scanner.py`, ajuste estes parâmetros:
 RSSI_ENTER_THRESHOLD = -75
 RSSI_EXIT_THRESHOLD = -80
 PRESENCE_TIMEOUT_SECONDS = 5
+ENABLE_TOTEM_FORWARDING = False
+TOTEM_INGEST_URL = "http://127.0.0.1:8000/ingest"
 ```
 
 Como interpretar:
@@ -115,6 +118,8 @@ Como interpretar:
 - `RSSI_ENTER_THRESHOLD`: valor mínimo para entrar no raio.
 - `RSSI_EXIT_THRESHOLD`: valor para sair do raio (histerese para evitar oscilação).
 - `PRESENCE_TIMEOUT_SECONDS`: se não chegar novo pacote nesse tempo, marca fora do raio.
+- `ENABLE_TOTEM_FORWARDING`: `False` para modo local (somente terminal do Windows), `True` para enviar ao totem.
+- `TOTEM_INGEST_URL`: URL HTTP do totem no WSL (usado apenas quando forwarding está `True`).
 
 Exemplo prático:
 
@@ -126,9 +131,10 @@ Exemplo prático:
 1. O ESP32 anuncia pacotes BLE com `Service Data`.
 2. O scanner no Windows captura os anúncios.
 3. O scanner filtra por `SERVICE_UUID`.
-4. O payload é exposto em `hex` para parse posterior.
-5. O totem no WSL mantém o último horário por `beacon_id`.
-6. Se o último evento tiver menos de 5 segundos, status `online`; caso contrário, `offline`.
+4. O scanner envia cada evento para `POST /ingest` no totem.
+5. O totem imprime `[INGEST]` no terminal para confirmar recebimento.
+6. O totem mantém o último horário por `beacon_id`.
+7. Se o último evento tiver menos de 5 segundos, status `online`; caso contrário, `offline`.
 
 ## 7. Configuração do UUID
 
@@ -151,15 +157,14 @@ Para padronizar parse entre ESP32 e totem, use algo como:
 
 Exemplo de payload: `01 00 00 00 01 02 00 64`
 
-## 9. Próxima evolução natural do MVP
+## 9. Confirmação de recebimento do sinal
 
-Atualmente o scanner apenas imprime dados. A próxima etapa é fazer o scanner enviar cada pacote para:
+Com os dois processos rodando:
 
-`POST http://127.0.0.1:8000/ingest`
+1. No terminal do scanner (Windows), você deve ver `Enviado ao totem`.
+2. No terminal do totem (WSL), você deve ver `[INGEST] beacon=...`.
 
-Assim o pipeline fica completo:
-
-ESP32 -> Scanner Windows -> API WSL -> Status de presença.
+Se aparecer `Totem indisponível`, verifique host/porta em `TOTEM_INGEST_URL` e se o `uvicorn` está ativo.
 
 ## 10. Solução de problemas comuns
 
