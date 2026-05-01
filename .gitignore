@@ -1,0 +1,14 @@
+# Dependências/ambientes locais (não versionar)
+front/node_modules/
+ble-totem/node_modules/
+front/.venv/
+front/venv/
+ble-totem/.venv/
+ble-totem/.venv-wsl/
+ble-totem/venv/
+
+# Cache/artefatos Python
+front/**/__pycache__/
+ble-totem/**/__pycache__/
+*.pyc
+*.pyo
