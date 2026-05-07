@@ -1,4 +1,6 @@
 # Dependências/ambientes locais (não versionar)
+.venv/
+venv/
 front/node_modules/
 ble-totem/node_modules/
 front/.venv/
