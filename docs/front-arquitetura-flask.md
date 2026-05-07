@@ -28,6 +28,7 @@ front/
     extensions.py
     models/
       __init__.py
+      collection.py
       user.py
     controllers/
       __init__.py
@@ -67,14 +68,22 @@ Implementa a **Application Factory** (`create_app`):
 4. Registra blueprints (rotas)
 
 ### `front/app/config.py`
-Configurações centralizadas da aplicação.
+Configurações centralizadas da aplicação, incluindo:
+
+- `SECRET_KEY`
+- `SQLALCHEMY_DATABASE_URI` (via `DATABASE_URL`)
+- `SQLALCHEMY_TRACK_MODIFICATIONS`
 
 ### `front/app/extensions.py`
-Arquivo dedicado para inicializar extensões Flask (ex.: banco de dados, login, migrations) em um único lugar.
+Arquivo dedicado para inicializar extensões Flask.  
+Atualmente inicializa o `db` (`Flask-SQLAlchemy`).
 
 ### `front/app/models/`
 Camada de dados (entidades/modelos).  
-Atualmente contém `user.py` como exemplo de entidade.
+Atualmente contém:
+
+- `collection.py`: entidade `CollectionSubmission` mapeada para a tabela `formulario`
+- `user.py`: exemplo simples de entidade
 
 ### `front/app/controllers/`
 Camada de controle HTTP:
@@ -85,6 +94,7 @@ Camada de controle HTTP:
 - retorna respostas/templates
 
 Exemplo atual: `home_routes.py` com as rotas `/`, `/consulta-saldo` e `/catalogo-premios`.
+Também possui `POST /coletas` para salvar envios do formulário de coleta.
 
 ### `front/app/services/`
 Camada de regra de negócio.  
@@ -112,6 +122,13 @@ Arquivos estáticos:
 3. Controller chama `home_service.py` para obter os dados de tela
 4. Controller renderiza o template correspondente
 5. Template usa `base.html` + tokens/componentes do CSS em `static/css/main.css`
+
+No fluxo da home (`/`):
+
+1. Usuário envia o formulário de coleta
+2. Controller valida os campos obrigatórios
+3. Controller persiste em `formulario` (`documentos`, `carrinho_id`, `totem_id`, `timestamp`)
+4. UI recebe feedback por mensagem flash (sucesso/erro)
 
 ## Mini framework de UI (cores e botões)
 

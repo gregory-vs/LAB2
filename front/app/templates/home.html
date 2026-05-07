@@ -14,25 +14,31 @@
     <h2>Nova Coleta</h2>
     <p class="muted">Identifique o usuário e informe o ID do carrinho.</p>
 
-    <form class="stack-md">
+    <form class="stack-md" method="post" action="{{ url_for('home.create_collection') }}">
+      <input type="hidden" name="id_type" id="id_type_input" value="cpf" />
       <div class="segment">
-        <button class="btn btn-secondary is-selected" type="button">CPF</button>
-        <button class="btn btn-ghost" type="button">Passaporte</button>
+        <button class="btn btn-secondary is-selected" type="button" data-id-type="cpf">CPF</button>
+        <button class="btn btn-ghost" type="button" data-id-type="passaporte">Passaporte</button>
       </div>
 
       <label class="field">
         <span>Número de identificação</span>
-        <input type="text" placeholder="000.000.000-00" />
+        <input type="text" name="id_number" placeholder="000.000.000-00" required />
       </label>
 
       <label class="field">
         <span>ID do carrinho (QR Code)</span>
         <div class="field-inline">
-          <input type="text" placeholder="Escaneie ou digite o ID..." />
+          <input type="text" name="carrinho_id" placeholder="Escaneie ou digite o ID..." required />
           <button class="btn btn-secondary icon-btn" type="button" aria-label="Abrir câmera">
             <span class="material-symbols-outlined">photo_camera</span>
           </button>
         </div>
+      </label>
+
+      <label class="field">
+        <span>ID do totem</span>
+        <input type="text" name="totem_id" placeholder="Ex.: TOTEM-01" required />
       </label>
 
       <button class="btn btn-primary btn-block" type="submit">Confirmar Coleta</button>
@@ -49,4 +55,20 @@
       <p class="kpi-value">{{ stats.pending_rewards }} pts</p>
     </article>
   </section>
+  <script>
+    const idTypeInput = document.getElementById("id_type_input");
+    const idTypeButtons = document.querySelectorAll("[data-id-type]");
+
+    idTypeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        idTypeInput.value = button.dataset.idType;
+        idTypeButtons.forEach((candidate) => {
+          candidate.classList.remove("is-selected", "btn-secondary");
+          candidate.classList.add("btn-ghost");
+        });
+        button.classList.remove("btn-ghost");
+        button.classList.add("is-selected", "btn-secondary");
+      });
+    });
+  </script>
 {% endblock %}
