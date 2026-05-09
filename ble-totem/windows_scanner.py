@@ -15,13 +15,13 @@ from bleak import BleakScanner
 
 SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab"
 RSSI_RANGE_THRESHOLD = -75
-PRESENCE_TIMEOUT_SECONDS = 5
+PRESENCE_TIMEOUT_SECONDS = 15
 ENABLE_TOTEM_FORWARDING = False
 TOTEM_INGEST_URL = "http://127.0.0.1:8000/ingest"
 
 LAST_SEEN: dict[str, datetime] = {}
 LAST_RSSI: dict[str, int] = {}
-IN_RANGE: dict[str, bool] = {}
+IN_RANGE: dict[str, list[bool]] = {}
 EVENT_QUEUE: asyncio.Queue[dict[str, str | int]] = asyncio.Queue(maxsize=500)
 
 
@@ -30,16 +30,45 @@ def _iso_now() -> str:
 
 
 def _update_range_state(beacon_key: str, in_range: bool, rssi: int, reason: str) -> None:
-    previous = IN_RANGE.get(beacon_key)
-    IN_RANGE[beacon_key] = in_range
+    if beacon_key not in IN_RANGE:
+        IN_RANGE[beacon_key] = []
 
-    if previous is None or previous != in_range:
+    IN_RANGE[beacon_key].append(in_range)
+
+    # Mantém apenas os últimos 5 estados desse beacon
+    IN_RANGE[beacon_key] = IN_RANGE[beacon_key][-5:]
+
+    historico = IN_RANGE[beacon_key]
+
+    if in_range:
         state_text = "NO RAIO"
         print(
             f"[{_iso_now()}] Beacon {beacon_key}: {state_text} "
             f"(RSSI={rssi} dBm, motivo={reason})"
         )
+    else:
+        state_text = "FORA DO RAIO"
+        print(
+            f"[{_iso_now()}] Beacon {beacon_key}: {state_text} "
+            f"(RSSI={rssi} dBm, motivo={reason})"
+        )
 
+    # Verifica se os últimos 5 status desse beacon são iguais
+    ultimos_5 = historico[-5:]
+
+    todos_iguais = (
+        len(ultimos_5) == 5
+        and all(valor == ultimos_5[0] for valor in ultimos_5)
+    )
+
+    print(f"Histórico {beacon_key}: {ultimos_5}")
+    print(f"Últimos 5 iguais? {todos_iguais}")
+
+    if todos_iguais:
+        if ultimos_5[0] is True:
+            print(f"Beacon {beacon_key}: DEVOLUÇÃO CONFIRMADA")
+        else:
+            print(f"Beacon {beacon_key}: RETIRADA/SAÍDA CONFIRMADA")
 
 def _enqueue_event(event: dict[str, str | int]) -> None:
     if not ENABLE_TOTEM_FORWARDING:
