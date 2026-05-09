@@ -29,6 +29,19 @@ Depois, execute o script SQL de criação da tabela:
 psql "$DATABASE_URL" -f docs/sql/create_formulario.sql
 ```
 
+Se o banco já tinha a tabela antiga, rode também a migração:
+
+```bash
+psql "$DATABASE_URL" -f docs/sql/alter_formulario_add_documento_tipo.sql
+```
+
+Para criar/atualizar a tabela de saldo por documento:
+
+```bash
+psql "$DATABASE_URL" -f docs/sql/create_saldo_documento.sql
+psql "$DATABASE_URL" -f docs/sql/alter_saldo_documento_split_documento.sql
+```
+
 Também é possível definir `SECRET_KEY`:
 
 ```bash

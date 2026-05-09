@@ -127,8 +127,9 @@ No fluxo da home (`/`):
 
 1. Usuário envia o formulário de coleta
 2. Controller valida os campos obrigatórios
-3. Controller persiste em `formulario` (`documentos`, `carrinho_id`, `totem_id`, `timestamp`)
-4. UI recebe feedback por mensagem flash (sucesso/erro)
+3. Controller persiste em `formulario` (`documento_tipo`, `documento`, `carrinho_id`, `totem_id`, `timestamp`)
+4. Controller faz upsert em `saldo_documento` por (`documento_tipo`, `documento`) com `pontos = pontos + 1`
+5. UI recebe feedback por mensagem flash (sucesso/erro)
 
 ## Mini framework de UI (cores e botões)
 
