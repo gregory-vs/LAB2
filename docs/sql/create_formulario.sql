@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS formulario (
     id BIGSERIAL PRIMARY KEY,
-    documentos VARCHAR(120) NOT NULL,
+    documento_tipo VARCHAR(20) NOT NULL,
+    documento VARCHAR(120) NOT NULL,
     carrinho_id VARCHAR(64) NOT NULL,
     totem_id VARCHAR(64) NOT NULL,
     "timestamp" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
