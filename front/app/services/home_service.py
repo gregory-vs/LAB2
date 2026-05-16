@@ -10,21 +10,6 @@ class CatalogItem(TypedDict):
     redeem_enabled: bool
 
 
-class CollectionStats(TypedDict):
-    today_collections: int
-    pending_rewards: int
-
-
-class RecentActivity(TypedDict):
-    title: str
-    date: str
-    points: int
-
-
-def get_collection_stats() -> CollectionStats:
-    return {"today_collections": 12, "pending_rewards": 850}
-
-
 def get_catalog_items() -> list[CatalogItem]:
     return [
         {
@@ -91,12 +76,4 @@ def get_catalog_items() -> list[CatalogItem]:
             ),
             "redeem_enabled": False,
         },
-    ]
-
-
-def get_recent_activities() -> list[RecentActivity]:
-    return [
-        {"title": "Coleção Terminal A", "date": "Hoje, 14:20", "points": 12},
-        {"title": "Coleção Estacionamento P3", "date": "Ontem, 09:15", "points": 8},
-        {"title": "Resgate: Vale-Café", "date": "12 Out, 16:45", "points": -30},
     ]

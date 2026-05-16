@@ -10,27 +10,78 @@
 
   <section class="panel">
     <h2>Identificação</h2>
-    <form class="stack-md">
-      <div class="segment">
-        <button class="btn btn-secondary is-selected" type="button">CPF</button>
-        <button class="btn btn-ghost" type="button">Passaporte</button>
+    <form
+      class="stack-md"
+      id="balance_form"
+      method="get"
+      action="{{ url_for('home.consulta_saldo_by_totem_slug', totem_slug=nav_totem_slug) if nav_totem_slug else url_for('home.consulta_saldo') }}"
+      data-balance-api-url="{{ url_for('home.consulta_saldo_api') }}"
+    >
+      <div class="btn-group id-type-toggle" role="group" aria-label="Tipo de identificação">
+        <input
+          type="radio"
+          class="btn-check"
+          name="id_type"
+          id="id_type_cpf"
+          value="cpf"
+          autocomplete="off"
+          {% if selected_id_type != 'passaporte' %}checked{% endif %}
+        />
+        <label class="btn btn-outline-primary" for="id_type_cpf">CPF</label>
+
+        <input
+          type="radio"
+          class="btn-check"
+          name="id_type"
+          id="id_type_passaporte"
+          value="passaporte"
+          autocomplete="off"
+          {% if selected_id_type == 'passaporte' %}checked{% endif %}
+        />
+        <label class="btn btn-outline-primary" for="id_type_passaporte">Passaporte</label>
       </div>
       <label class="field">
         <span>Número de identificação</span>
-        <input type="text" placeholder="000.000.000-00" />
+        <input
+          type="text"
+          id="id_number"
+          name="id_number"
+          placeholder="000.000.000-00"
+          inputmode="numeric"
+          maxlength="14"
+          value="{{ id_number_value }}"
+          required
+        />
+        <small class="muted" id="document_hint">
+          {% if selected_id_type == 'passaporte' %}
+            Formato Passaporte: AA000000
+          {% else %}
+            Formato CPF: 000.000.000-00
+          {% endif %}
+        </small>
       </label>
       <button class="btn btn-primary" type="submit">Consultar pontos</button>
+      <p class="muted" id="balance_feedback" aria-live="polite"></p>
     </form>
   </section>
 
   <section class="panel highlight">
     <p class="muted">Saldo atual</p>
-    <p class="big-value">250 pontos</p>
+    <p class="big-value" id="current_balance_value">
+      {% if current_balance is none %}
+        -- pontos
+      {% else %}
+        {{ current_balance }} pontos
+      {% endif %}
+    </p>
   </section>
 
   <section class="panel">
     <h2>Atividades recentes</h2>
-    <div class="activity-list">
+    <p class="muted" id="recent_activities_empty" {% if recent_activities %}hidden{% endif %}>
+      Nenhuma atividade recente encontrada.
+    </p>
+    <div class="activity-list" id="recent_activities_list">
       {% for activity in recent_activities %}
         <article class="activity-item">
           <div>
@@ -44,4 +95,168 @@
       {% endfor %}
     </div>
   </section>
+  <div class="fullscreen-loader" id="full_screen_loader" hidden aria-live="assertive" aria-busy="true">
+    <div class="fullscreen-loader__content">
+      <div class="fullscreen-loader__spinner" aria-hidden="true"></div>
+      <p>Consultando saldo...</p>
+    </div>
+  </div>
+
+  <script>
+    const balanceForm = document.getElementById("balance_form");
+    const documentInput = document.getElementById("id_number");
+    const documentHint = document.getElementById("document_hint");
+    const idTypeInputs = document.querySelectorAll("input[name='id_type']");
+    const balanceValue = document.getElementById("current_balance_value");
+    const balanceFeedback = document.getElementById("balance_feedback");
+    const fullScreenLoader = document.getElementById("full_screen_loader");
+    const recentActivitiesList = document.getElementById("recent_activities_list");
+    const recentActivitiesEmpty = document.getElementById("recent_activities_empty");
+
+    function selectedType() {
+      const selected = document.querySelector("input[name='id_type']:checked");
+      return selected ? selected.value : "cpf";
+    }
+
+    function maskCpf(value) {
+      const digits = value.replace(/\D/g, "").slice(0, 11);
+      const first = digits.slice(0, 3);
+      const second = digits.slice(3, 6);
+      const third = digits.slice(6, 9);
+      const fourth = digits.slice(9, 11);
+
+      if (digits.length <= 3) return first;
+      if (digits.length <= 6) return `${first}.${second}`;
+      if (digits.length <= 9) return `${first}.${second}.${third}`;
+      return `${first}.${second}.${third}-${fourth}`;
+    }
+
+    function maskPassport(value) {
+      const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      let letters = "";
+      let digits = "";
+
+      for (const char of sanitized) {
+        if (letters.length < 2 && /[A-Z]/.test(char)) {
+          letters += char;
+          continue;
+        }
+        if (digits.length < 6 && /\d/.test(char)) {
+          digits += char;
+        }
+      }
+
+      return `${letters}${digits}`;
+    }
+
+    function applyMask() {
+      if (selectedType() === "cpf") {
+        documentInput.value = maskCpf(documentInput.value);
+      } else {
+        documentInput.value = maskPassport(documentInput.value);
+      }
+    }
+
+    function updateDocumentUi() {
+      if (selectedType() === "cpf") {
+        documentInput.value = "";
+        documentInput.placeholder = "000.000.000-00";
+        documentInput.setAttribute("inputmode", "numeric");
+        documentInput.setAttribute("maxlength", "14");
+        documentHint.textContent = "Formato CPF: 000.000.000-00";
+        balanceFeedback.textContent = "";
+        balanceFeedback.classList.remove("text-negative", "text-positive");
+        return;
+      }
+
+      documentInput.value = "";
+      documentInput.placeholder = "AA000000";
+      documentInput.setAttribute("inputmode", "text");
+      documentInput.setAttribute("maxlength", "8");
+      documentHint.textContent = "Formato Passaporte: AA000000";
+      balanceFeedback.textContent = "";
+      balanceFeedback.classList.remove("text-negative", "text-positive");
+    }
+
+    function setLoading(isLoading) {
+      if (!fullScreenLoader) return;
+      fullScreenLoader.hidden = !isLoading;
+      document.body.classList.toggle("is-loading", isLoading);
+    }
+
+    function renderActivities(activities) {
+      recentActivitiesList.replaceChildren();
+      if (!activities.length) {
+        recentActivitiesEmpty.hidden = false;
+        return;
+      }
+
+      recentActivitiesEmpty.hidden = true;
+      activities.forEach((activity) => {
+        const item = document.createElement("article");
+        item.className = "activity-item";
+
+        const info = document.createElement("div");
+        const title = document.createElement("p");
+        title.className = "activity-title";
+        title.textContent = activity.title;
+        const date = document.createElement("p");
+        date.className = "muted";
+        date.textContent = activity.date;
+        info.append(title, date);
+
+        const points = document.createElement("strong");
+        points.className = activity.points < 0 ? "text-negative" : "text-positive";
+        points.textContent = `${activity.points >= 0 ? "+" : ""}${activity.points}`;
+
+        item.append(info, points);
+        recentActivitiesList.appendChild(item);
+      });
+    }
+
+    async function submitBalanceLookup(event) {
+      event.preventDefault();
+      balanceFeedback.textContent = "";
+      balanceFeedback.classList.remove("text-negative", "text-positive");
+
+      const params = new URLSearchParams({
+        id_type: selectedType(),
+        id_number: documentInput.value,
+      });
+
+      setLoading(true);
+      try {
+        const response = await fetch(`${balanceForm.dataset.balanceApiUrl}?${params.toString()}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          balanceFeedback.textContent = payload.error || "Não foi possível consultar o saldo.";
+          balanceFeedback.classList.add("text-negative");
+          return;
+        }
+
+        balanceValue.textContent = `${payload.balance} pontos`;
+        renderActivities(Array.isArray(payload.recent_activities) ? payload.recent_activities : []);
+        balanceFeedback.textContent = "Saldo atualizado com sucesso.";
+        balanceFeedback.classList.add("text-positive");
+      } catch (error) {
+        balanceFeedback.textContent = "Erro de conexão ao consultar saldo.";
+        balanceFeedback.classList.add("text-negative");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    documentInput.addEventListener("input", applyMask);
+    idTypeInputs.forEach((input) => input.addEventListener("change", updateDocumentUi));
+    balanceForm.addEventListener("submit", submitBalanceLookup);
+    if (selectedType() === "passaporte") {
+      documentInput.placeholder = "AA000000";
+      documentInput.setAttribute("inputmode", "text");
+      documentInput.setAttribute("maxlength", "8");
+    }
+  </script>
 {% endblock %}

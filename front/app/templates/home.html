@@ -14,7 +14,13 @@
     <h2>Nova Coleta</h2>
     <p class="muted">Identifique o usuário e informe o ID do carrinho.</p>
 
-    <form class="stack-md" method="post" action="{{ url_for('home.create_collection') }}">
+    <form
+      class="stack-md"
+      id="collection_form"
+      method="post"
+      action="{{ url_for('home.create_collection') }}"
+      data-collection-api-url="{{ url_for('home.create_collection_api') }}"
+    >
       <div class="btn-group id-type-toggle" role="group" aria-label="Tipo de identificação">
         <input
           type="radio"
@@ -64,7 +70,18 @@
 
       <label class="field">
         <span>ID do totem</span>
-        <input type="text" name="totem_id" placeholder="Ex.: TOTEM-01" required />
+        {% if is_totem_locked|default(false) %}
+          <input type="hidden" name="totem_id" value="{{ prefilled_totem_id|default('') }}" />
+        {% endif %}
+        <input
+          type="text"
+          id="totem_id"
+          {% if not is_totem_locked|default(false) %}name="totem_id"{% endif %}
+          placeholder="Ex.: TOTEM-01"
+          value="{{ prefilled_totem_id|default('') }}"
+          {% if is_totem_locked|default(false) %}disabled{% endif %}
+          required
+        />
       </label>
 
       <button class="btn btn-primary btn-block" type="submit">Confirmar Coleta</button>
@@ -74,17 +91,28 @@
   <section class="kpi-grid">
     <article class="kpi-card">
       <p class="kpi-label">Coletas hoje</p>
-      <p class="kpi-value">{{ stats.today_collections }}</p>
-    </article>
-    <article class="kpi-card">
-      <p class="kpi-label">Recompensas pendentes</p>
-      <p class="kpi-value">{{ stats.pending_rewards }} pts</p>
+      <p class="kpi-value" id="today_collections_value">{{ stats.today_collections }}</p>
     </article>
   </section>
+  <div class="fullscreen-loader" id="full_screen_loader" hidden aria-live="assertive" aria-busy="true">
+    <div class="fullscreen-loader__content">
+      <div class="fullscreen-loader__spinner" aria-hidden="true"></div>
+      <p>Enviando coleta...</p>
+    </div>
+  </div>
+  <div class="toast-alert" id="collection_toast" role="alert" aria-live="assertive" hidden></div>
+
   <script>
+    const collectionForm = document.getElementById("collection_form");
     const documentInput = document.getElementById("id_number");
     const documentHint = document.getElementById("document_hint");
     const idTypeInputs = document.querySelectorAll("input[name='id_type']");
+    const cartInput = collectionForm.querySelector("input[name='carrinho_id']");
+    const fullScreenLoader = document.getElementById("full_screen_loader");
+    const collectionToast = document.getElementById("collection_toast");
+    const todayCollectionsValue = document.getElementById("today_collections_value");
+    let toastTimeoutId = null;
+    let toastHideTimeoutId = null;
 
     function selectedType() {
       const selected = document.querySelector("input[name='id_type']:checked");
@@ -147,7 +175,88 @@
       documentHint.textContent = "Formato Passaporte: AA000000";
     }
 
+    function setLoading(isLoading) {
+      if (!fullScreenLoader) return;
+      fullScreenLoader.hidden = !isLoading;
+      document.body.classList.toggle("is-loading", isLoading);
+    }
+
+    function hideToastAnimated() {
+      if (!collectionToast || collectionToast.hidden) return;
+      collectionToast.classList.remove("is-visible");
+      collectionToast.classList.add("is-leaving");
+
+      if (toastHideTimeoutId) {
+        clearTimeout(toastHideTimeoutId);
+      }
+      toastHideTimeoutId = setTimeout(() => {
+        collectionToast.hidden = true;
+        collectionToast.classList.remove("is-leaving");
+      }, 300);
+    }
+
+    function showToast(message, type = "success") {
+      if (!collectionToast) return;
+
+      collectionToast.textContent = message;
+      collectionToast.classList.remove("is-success", "is-error", "is-leaving", "is-visible");
+      collectionToast.classList.add(type === "error" ? "is-error" : "is-success");
+      collectionToast.hidden = false;
+      void collectionToast.offsetWidth;
+      collectionToast.classList.add("is-visible");
+
+      if (toastTimeoutId) {
+        clearTimeout(toastTimeoutId);
+      }
+      if (toastHideTimeoutId) {
+        clearTimeout(toastHideTimeoutId);
+      }
+      toastTimeoutId = setTimeout(() => {
+        hideToastAnimated();
+      }, 5000);
+    }
+
+    async function submitCollection(event) {
+      event.preventDefault();
+
+      const formData = new FormData(collectionForm);
+
+      setLoading(true);
+      try {
+        const response = await fetch(collectionForm.dataset.collectionApiUrl, {
+          method: "POST",
+          body: formData,
+          headers: { Accept: "application/json" },
+        });
+
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = {};
+        }
+
+        if (!response.ok) {
+          showToast(payload.error || "Não foi possível enviar a coleta.", "error");
+          return;
+        }
+
+        showToast(payload.message || "Coleta enviada com sucesso.", "success");
+        if (typeof payload.today_collections === "number") {
+          todayCollectionsValue.textContent = payload.today_collections;
+        }
+
+        documentInput.value = "";
+        cartInput.value = "";
+      } catch (error) {
+        showToast("Erro de conexão ao enviar a coleta.", "error");
+      } finally {
+        setLoading(false);
+      }
+    }
+
     documentInput.addEventListener("input", applyMask);
     idTypeInputs.forEach((input) => input.addEventListener("change", updateDocumentUi));
+    collectionForm.addEventListener("submit", submitCollection);
   </script>
 {% endblock %}
