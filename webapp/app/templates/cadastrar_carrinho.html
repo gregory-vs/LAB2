@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastrar Carrinho - LAB2 Webapp{% endblock %}
+
+{% block content %}
+  <section class="page-card card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+      <span class="badge text-bg-primary mb-3">Cadastrar carrinho</span>
+      <h1 class="h2 fw-bold mb-3">Cadastro de carrinho</h1>
+      <p class="text-secondary mb-4">Tela inicial para registrar um novo carrinho no sistema.</p>
+
+      <form class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="cart_id">ID do carrinho</label>
+          <input class="form-control" id="cart_id" type="text" placeholder="CART-001" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="cart_location">Localizacao</label>
+          <input class="form-control" id="cart_location" type="text" placeholder="Estacionamento A" />
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="cart_description">Descricao</label>
+          <textarea class="form-control" id="cart_description" rows="4" placeholder="Detalhes do carrinho"></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" type="button">Salvar carrinho</button>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

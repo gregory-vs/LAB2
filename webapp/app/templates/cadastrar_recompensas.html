@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastrar Recompensas - LAB2 Webapp{% endblock %}
+
+{% block content %}
+  <section class="page-card card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+      <span class="badge text-bg-primary mb-3">Cadastrar recompensas</span>
+      <h1 class="h2 fw-bold mb-3">Cadastro de recompensas</h1>
+      <p class="text-secondary mb-4">Tela inicial para registrar uma nova recompensa no sistema.</p>
+
+      <form class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="reward_name">Nome da recompensa</label>
+          <input class="form-control" id="reward_name" type="text" placeholder="Voucher de desconto" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="reward_cost">Custo em pontos</label>
+          <input class="form-control" id="reward_cost" type="number" placeholder="100" />
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="reward_description">Descricao</label>
+          <textarea class="form-control" id="reward_description" rows="4" placeholder="Detalhes da recompensa"></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" type="button">Salvar recompensa</button>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

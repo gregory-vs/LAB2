@@ -1,0 +1,34 @@
+body {
+  min-height: 100vh;
+}
+
+.auth-wrapper {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 1rem;
+}
+
+.page-card {
+  border-radius: 1rem;
+}
+
+.navbar .nav-link {
+  text-transform: capitalize;
+}
+
+.navbar .nav-link.active {
+  color: var(--bs-primary);
+  font-weight: 600;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  color: var(--bs-primary);
+}

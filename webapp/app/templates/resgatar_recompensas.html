@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Resgatar Recompensas - LAB2 Webapp{% endblock %}
+
+{% block content %}
+  <section class="page-card card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+      <span class="badge text-bg-primary mb-3">Resgatar recompensas</span>
+      <h1 class="h2 fw-bold mb-3">Resgate de recompensas</h1>
+      <p class="text-secondary mb-4">Tela inicial para consultar pontos e solicitar o resgate.</p>
+
+      <form class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="reward_user">Usuario</label>
+          <input class="form-control" id="reward_user" type="text" placeholder="Digite o usuario" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="reward_points">Pontos disponiveis</label>
+          <input class="form-control" id="reward_points" type="number" placeholder="0" />
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="reward_choice">Recompensa</label>
+          <select class="form-select" id="reward_choice">
+            <option selected>Selecione uma recompensa</option>
+            <option>Voucher</option>
+            <option>Desconto</option>
+            <option>Brinde</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" type="button">Resgatar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}
