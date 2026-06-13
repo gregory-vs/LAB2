@@ -5,7 +5,10 @@ front/node_modules/
 ble-totem/node_modules/
 front/.venv/
 front/venv/
+.env
+*/.env
 front/.env
+webapp/.env
 ble-totem/.venv/
 ble-totem/.venv-wsl/
 ble-totem/venv/

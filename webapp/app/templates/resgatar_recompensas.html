@@ -7,30 +7,254 @@
     <div class="card-body p-4 p-md-5">
       <span class="badge text-bg-primary mb-3">Resgatar recompensas</span>
       <h1 class="h2 fw-bold mb-3">Resgate de recompensas</h1>
-      <p class="text-secondary mb-4">Tela inicial para consultar pontos e solicitar o resgate.</p>
+      <p class="text-secondary mb-4">Busque o usuario por CPF ou passaporte para carregar os pontos e recompensas disponiveis.</p>
 
-      <form class="row g-3">
+      <form class="row g-3" id="reward_lookup_form" data-find-user-url="{{ url_for('home.buscar_usuario_recompensa') }}">
+        <div class="col-12">
+          <div class="btn-group id-type-toggle" role="group" aria-label="Tipo de identificacao">
+            <input
+              type="radio"
+              class="btn-check"
+              name="id_type"
+              id="id_type_cpf"
+              value="cpf"
+              autocomplete="off"
+              checked
+            />
+            <label class="btn btn-outline-primary" for="id_type_cpf">CPF</label>
+
+            <input
+              type="radio"
+              class="btn-check"
+              name="id_type"
+              id="id_type_passaporte"
+              value="passaporte"
+              autocomplete="off"
+            />
+            <label class="btn btn-outline-primary" for="id_type_passaporte">Passaporte</label>
+          </div>
+        </div>
         <div class="col-md-6">
-          <label class="form-label" for="reward_user">Usuario</label>
-          <input class="form-control" id="reward_user" type="text" placeholder="Digite o usuario" />
+          <label class="form-label" for="reward_document">Numero de identificacao</label>
+          <input
+            class="form-control"
+            id="reward_document"
+            name="document"
+            type="text"
+            placeholder="000.000.000-00"
+            inputmode="numeric"
+            maxlength="14"
+            required
+          />
+          <small class="form-text text-secondary" id="document_hint">Formato CPF: 000.000.000-00</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label d-block">&nbsp;</label>
+          <div class="d-grid gap-2 d-md-flex">
+            <button class="btn btn-primary flex-grow-1" type="submit">Buscar usuario</button>
+            <button class="btn btn-outline-secondary" id="clear_user_button" type="button">Limpar</button>
+          </div>
+        </div>
+        <div class="col-12">
+          <p class="small mb-0" id="reward_feedback" aria-live="polite"></p>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="reward_user">Documento do usuario</label>
+          <input class="form-control" id="reward_user" type="text" placeholder="Aguardando busca" readonly />
         </div>
         <div class="col-md-6">
           <label class="form-label" for="reward_points">Pontos disponiveis</label>
-          <input class="form-control" id="reward_points" type="number" placeholder="0" />
+          <input class="form-control" id="reward_points" type="text" placeholder="0" readonly />
         </div>
         <div class="col-12">
           <label class="form-label" for="reward_choice">Recompensa</label>
-          <select class="form-select" id="reward_choice">
-            <option selected>Selecione uma recompensa</option>
-            <option>Voucher</option>
-            <option>Desconto</option>
-            <option>Brinde</option>
+          <select class="form-select" id="reward_choice" disabled>
+            <option selected value="">Busque um usuario para carregar as recompensas</option>
           </select>
         </div>
         <div class="col-12">
-          <button class="btn btn-primary" type="button">Resgatar</button>
+          <button class="btn btn-primary" type="button" disabled>Resgatar</button>
         </div>
       </form>
     </div>
   </section>
+
+  <div class="fullscreen-loader" id="full_screen_loader" hidden aria-live="assertive" aria-busy="true">
+    <div class="fullscreen-loader__content">
+      <div class="fullscreen-loader__spinner" aria-hidden="true"></div>
+      <p>Buscando usuario...</p>
+    </div>
+  </div>
+
+  <script>
+    const rewardLookupForm = document.getElementById("reward_lookup_form");
+    const documentInput = document.getElementById("reward_document");
+    const documentHint = document.getElementById("document_hint");
+    const idTypeInputs = document.querySelectorAll("input[name='id_type']");
+    const rewardFeedback = document.getElementById("reward_feedback");
+    const rewardUserInput = document.getElementById("reward_user");
+    const rewardPointsInput = document.getElementById("reward_points");
+    const rewardChoiceSelect = document.getElementById("reward_choice");
+    const clearUserButton = document.getElementById("clear_user_button");
+    const fullScreenLoader = document.getElementById("full_screen_loader");
+
+    function selectedType() {
+      const selected = document.querySelector("input[name='id_type']:checked");
+      return selected ? selected.value : "cpf";
+    }
+
+    function maskCpf(value) {
+      const digits = value.replace(/\D/g, "").slice(0, 11);
+      const first = digits.slice(0, 3);
+      const second = digits.slice(3, 6);
+      const third = digits.slice(6, 9);
+      const fourth = digits.slice(9, 11);
+
+      if (digits.length <= 3) return first;
+      if (digits.length <= 6) return `${first}.${second}`;
+      if (digits.length <= 9) return `${first}.${second}.${third}`;
+      return `${first}.${second}.${third}-${fourth}`;
+    }
+
+    function maskPassport(value) {
+      const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      let letters = "";
+      let digits = "";
+
+      for (const char of sanitized) {
+        if (letters.length < 2 && /[A-Z]/.test(char)) {
+          letters += char;
+          continue;
+        }
+        if (digits.length < 6 && /\d/.test(char)) {
+          digits += char;
+        }
+      }
+
+      return `${letters}${digits}`;
+    }
+
+    function applyMask() {
+      documentInput.value = selectedType() === "cpf" ? maskCpf(documentInput.value) : maskPassport(documentInput.value);
+    }
+
+    function resetUserData() {
+      rewardUserInput.value = "";
+      rewardPointsInput.value = "";
+      rewardChoiceSelect.innerHTML = "<option selected value=\"\">Busque um usuario para carregar as recompensas</option>";
+      rewardChoiceSelect.disabled = true;
+    }
+
+    function updateDocumentUi() {
+      documentInput.value = "";
+      resetUserData();
+      rewardFeedback.textContent = "";
+      rewardFeedback.classList.remove("text-danger", "text-success");
+
+      if (selectedType() === "cpf") {
+        documentInput.placeholder = "000.000.000-00";
+        documentInput.setAttribute("inputmode", "numeric");
+        documentInput.setAttribute("maxlength", "14");
+        documentHint.textContent = "Formato CPF: 000.000.000-00";
+        return;
+      }
+
+      documentInput.placeholder = "AA000000";
+      documentInput.setAttribute("inputmode", "text");
+      documentInput.setAttribute("maxlength", "8");
+      documentHint.textContent = "Formato Passaporte: AA000000";
+    }
+
+    function clearSelectedUser() {
+      documentInput.value = "";
+      resetUserData();
+      rewardFeedback.textContent = "";
+      rewardFeedback.classList.remove("text-danger", "text-success");
+      updateDocumentUi();
+    }
+
+    function setLoading(isLoading) {
+      if (!fullScreenLoader) return;
+      fullScreenLoader.hidden = !isLoading;
+      document.body.classList.toggle("is-loading", isLoading);
+    }
+
+    function renderRewards(rewards) {
+      rewardChoiceSelect.replaceChildren();
+
+      if (!rewards.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Nenhuma recompensa disponivel para este saldo";
+        option.selected = true;
+        rewardChoiceSelect.appendChild(option);
+        rewardChoiceSelect.disabled = true;
+        return;
+      }
+
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Selecione uma recompensa";
+      placeholder.selected = true;
+      rewardChoiceSelect.appendChild(placeholder);
+
+      rewards.forEach((reward) => {
+        const option = document.createElement("option");
+        option.value = reward.id;
+        option.textContent = `${reward.name} (${reward.cost} pontos)`;
+        rewardChoiceSelect.appendChild(option);
+      });
+
+      rewardChoiceSelect.disabled = false;
+    }
+
+    async function submitRewardLookup(event) {
+      event.preventDefault();
+      rewardFeedback.textContent = "";
+      rewardFeedback.classList.remove("text-danger", "text-success");
+      resetUserData();
+
+      const params = new URLSearchParams({
+        id_type: selectedType(),
+        document: documentInput.value,
+      });
+
+      setLoading(true);
+      try {
+        const response = await fetch(`${rewardLookupForm.dataset.findUserUrl}?${params.toString()}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = {};
+        }
+
+        if (!response.ok) {
+          rewardFeedback.textContent = payload.error || "Nao foi possivel buscar o usuario.";
+          rewardFeedback.classList.add("text-danger");
+          return;
+        }
+
+        rewardUserInput.value = payload.document || "";
+        rewardPointsInput.value = `${payload.points || 0} pontos`;
+        renderRewards(Array.isArray(payload.rewards) ? payload.rewards : []);
+        rewardFeedback.textContent = "Usuario encontrado com sucesso.";
+        rewardFeedback.classList.add("text-success");
+      } catch (error) {
+        rewardFeedback.textContent = "Erro de conexao ao buscar o usuario.";
+        rewardFeedback.classList.add("text-danger");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    documentInput.addEventListener("input", applyMask);
+    idTypeInputs.forEach((input) => input.addEventListener("change", updateDocumentUi));
+    clearUserButton.addEventListener("click", clearSelectedUser);
+    rewardLookupForm.addEventListener("submit", submitRewardLookup);
+  </script>
 {% endblock %}

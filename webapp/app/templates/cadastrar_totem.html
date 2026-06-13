@@ -7,25 +7,275 @@
     <div class="card-body p-4 p-md-5">
       <span class="badge text-bg-primary mb-3">Cadastrar totem</span>
       <h1 class="h2 fw-bold mb-3">Cadastro de totem</h1>
-      <p class="text-secondary mb-4">Tela inicial para registrar um novo totem de coleta.</p>
+      <p class="text-secondary mb-4">Registre um novo totem na tabela <code>totem</code>.</p>
 
-      <form class="row g-3">
+      <form
+        class="row g-3"
+        id="create_totem_form"
+        method="post"
+        action="{{ url_for('home.cadastrar_totem') }}"
+        data-api-url="{{ url_for('home.cadastrar_totem_api') }}"
+      >
         <div class="col-md-6">
           <label class="form-label" for="totem_name">Nome do totem</label>
-          <input class="form-control" id="totem_name" type="text" placeholder="Totem Central" />
+          <input class="form-control" id="totem_name" name="nome" type="text" placeholder="Totem Central" required />
         </div>
         <div class="col-md-6">
           <label class="form-label" for="totem_code">Codigo do totem</label>
-          <input class="form-control" id="totem_code" type="text" placeholder="TOTEM-001" />
+          <input class="form-control" id="totem_code" name="slug" type="text" placeholder="totem-central-01" required />
         </div>
         <div class="col-12">
-          <label class="form-label" for="totem_address">Endereco</label>
-          <input class="form-control" id="totem_address" type="text" placeholder="Rua Exemplo, 123" />
+          <label class="form-label" for="totem_address">Descricao do local</label>
+          <input
+            class="form-control"
+            id="totem_address"
+            name="local_descricao"
+            type="text"
+            placeholder="Rua Exemplo, 123"
+          />
         </div>
         <div class="col-12">
-          <button class="btn btn-primary" type="button">Salvar totem</button>
+          <div class="form-check">
+            <input class="form-check-input" id="totem_active" name="ativo" type="checkbox" checked />
+            <label class="form-check-label" for="totem_active">Totem ativo</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit">Salvar totem</button>
+        </div>
+        <div class="col-12">
+          <p class="small mb-0" id="totem_feedback" aria-live="polite"></p>
         </div>
       </form>
     </div>
   </section>
+
+  <section class="accordion mt-4" id="totemsAccordion">
+    <div class="accordion-item border-0 shadow-sm rounded-4 overflow-hidden">
+      <h2 class="accordion-header" id="registeredTotemsHeading">
+        <button
+          class="accordion-button"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#registeredTotemsCollapse"
+          aria-expanded="true"
+          aria-controls="registeredTotemsCollapse"
+        >
+          Totens cadastrados
+        </button>
+      </h2>
+      <div
+        id="registeredTotemsCollapse"
+        class="accordion-collapse collapse show"
+        aria-labelledby="registeredTotemsHeading"
+        data-bs-parent="#totemsAccordion"
+      >
+        <div class="accordion-body p-0" id="totems_container"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="fullscreen-loader" id="full_screen_loader" hidden aria-live="assertive" aria-busy="true">
+    <div class="fullscreen-loader__content">
+      <div class="fullscreen-loader__spinner" aria-hidden="true"></div>
+      <p>Salvando totem...</p>
+    </div>
+  </div>
+
+  <script id="totems_data" type="application/json">{{ serialized_totems|tojson }}</script>
+  <script>
+    const createTotemForm = document.getElementById("create_totem_form");
+    const totemFeedback = document.getElementById("totem_feedback");
+    const totemsContainer = document.getElementById("totems_container");
+    const totemsDataElement = document.getElementById("totems_data");
+    const fullScreenLoader = document.getElementById("full_screen_loader");
+    let totems = JSON.parse(totemsDataElement.textContent);
+
+    function setFeedback(message, type = "success") {
+      totemFeedback.textContent = message;
+      totemFeedback.classList.remove("text-danger", "text-success");
+      totemFeedback.classList.add(type === "error" ? "text-danger" : "text-success");
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function setLoading(isLoading, message = "Salvando totem...") {
+      if (!fullScreenLoader) return;
+      const loaderMessage = fullScreenLoader.querySelector("p");
+      if (loaderMessage) {
+        loaderMessage.textContent = message;
+      }
+      fullScreenLoader.hidden = !isLoading;
+      document.body.classList.toggle("is-loading", isLoading);
+    }
+
+    function renderTotemsTable(items) {
+      if (!items.length) {
+        totemsContainer.innerHTML = '<div class="p-4 text-secondary">Nenhum totem cadastrado.</div>';
+        return;
+      }
+
+      const rows = items
+        .map((totem, index) => {
+          const editFormId = `edit-totem-${index}`;
+          const statusBadge = totem.ativo ? "text-bg-success" : "text-bg-secondary";
+          const statusLabel = totem.ativo ? "Ativo" : "Inativo";
+          const toggleLabel = totem.ativo ? "Inativar" : "Ativar";
+          const toggleClass = totem.ativo ? "btn-outline-warning" : "btn-outline-success";
+          const toggleUrl = totem.ativo
+            ? `/api/totens/${totem.id}/inativar`
+            : `/api/totens/${totem.id}/ativar`;
+
+          return `
+            <tr>
+              <td>
+                <input
+                  class="form-control"
+                  type="text"
+                  name="nome"
+                  value="${escapeHtml(totem.nome)}"
+                  form="${editFormId}"
+                  aria-label="Nome do totem ${escapeHtml(totem.slug)}"
+                  required
+                />
+              </td>
+              <td>
+                <input
+                  class="form-control"
+                  type="text"
+                  name="slug"
+                  value="${escapeHtml(totem.slug)}"
+                  form="${editFormId}"
+                  aria-label="Codigo do totem ${escapeHtml(totem.slug)}"
+                  required
+                />
+              </td>
+              <td>
+                <input
+                  class="form-control"
+                  type="text"
+                  name="local_descricao"
+                  value="${escapeHtml(totem.local_descricao || "")}"
+                  form="${editFormId}"
+                  aria-label="Local do totem ${escapeHtml(totem.slug)}"
+                />
+              </td>
+              <td>
+                <span class="badge ${statusBadge}">${statusLabel}</span>
+              </td>
+              <td class="text-end">
+                <form
+                  id="${editFormId}"
+                  class="d-inline ajax-totem-form"
+                  method="post"
+                  action="/api/totens/${totem.id}/editar"
+                >
+                  <button class="btn btn-outline-primary" type="submit">Salvar</button>
+                </form>
+                <div class="cart-actions justify-content-end mt-2">
+                  <form class="ajax-totem-form" method="post" action="${toggleUrl}">
+                    <button class="btn ${toggleClass}" type="submit">${toggleLabel}</button>
+                  </form>
+                  <form class="ajax-totem-form" method="post" action="/api/totens/${totem.id}/excluir">
+                    <button class="btn btn-outline-danger" type="submit">Excluir</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      totemsContainer.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">Codigo</th>
+                <th scope="col">Local</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="text-end">Acoes</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function submitAjaxForm(form) {
+      const formData = new FormData(form);
+      const requestUrl = form.dataset.apiUrl || form.action;
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = {};
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Nao foi possivel salvar o totem.");
+      }
+
+      totems = Array.isArray(payload.totems) ? payload.totems : [];
+      renderTotemsTable(totems);
+      setFeedback(payload.message || "Operacao realizada com sucesso.");
+    }
+
+    createTotemForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setLoading(true, "Cadastrando totem...");
+      try {
+        await submitAjaxForm(createTotemForm);
+        createTotemForm.reset();
+        document.getElementById("totem_active").checked = true;
+      } catch (error) {
+        setFeedback(error.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    totemsContainer.addEventListener("submit", async (event) => {
+      const form = event.target.closest(".ajax-totem-form");
+      if (!form) return;
+
+      event.preventDefault();
+      let loadingMessage = "Salvando totem...";
+      if (form.action.includes("/ativar")) {
+        loadingMessage = "Ativando totem...";
+      } else if (form.action.includes("/inativar")) {
+        loadingMessage = "Inativando totem...";
+      } else if (form.action.includes("/excluir")) {
+        loadingMessage = "Excluindo totem...";
+      } else if (form.action.includes("/editar")) {
+        loadingMessage = "Atualizando totem...";
+      }
+
+      setLoading(true, loadingMessage);
+      try {
+        await submitAjaxForm(form);
+      } catch (error) {
+        setFeedback(error.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    renderTotemsTable(totems);
+  </script>
 {% endblock %}

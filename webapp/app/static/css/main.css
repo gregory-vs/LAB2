@@ -2,6 +2,10 @@ body {
   min-height: 100vh;
 }
 
+body.is-loading {
+  overflow: hidden;
+}
+
 .auth-wrapper {
   min-height: calc(100vh - 140px);
   display: flex;
@@ -31,4 +35,60 @@ body {
 .navbar .nav-link:hover,
 .navbar .nav-link:focus {
   color: var(--bs-primary);
+}
+
+.id-type-toggle .btn {
+  min-width: 140px;
+}
+
+.cart-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fullscreen-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(33, 37, 41, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.fullscreen-loader[hidden] {
+  display: none !important;
+}
+
+.fullscreen-loader__content {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  min-width: 220px;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.18);
+}
+
+.fullscreen-loader__content p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.fullscreen-loader__spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #dee2e6;
+  border-top-color: var(--bs-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

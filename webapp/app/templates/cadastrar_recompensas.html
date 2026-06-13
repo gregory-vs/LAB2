@@ -7,25 +7,247 @@
     <div class="card-body p-4 p-md-5">
       <span class="badge text-bg-primary mb-3">Cadastrar recompensas</span>
       <h1 class="h2 fw-bold mb-3">Cadastro de recompensas</h1>
-      <p class="text-secondary mb-4">Tela inicial para registrar uma nova recompensa no sistema.</p>
+      <p class="text-secondary mb-4">Registre uma nova recompensa na tabela <code>recompensas</code>.</p>
 
-      <form class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label" for="reward_name">Nome da recompensa</label>
-          <input class="form-control" id="reward_name" type="text" placeholder="Voucher de desconto" />
+      <form
+        class="row g-3"
+        id="create_reward_form"
+        method="post"
+        action="{{ url_for('home.cadastrar_recompensas') }}"
+        data-api-url="{{ url_for('home.cadastrar_recompensa_api') }}"
+      >
+        <div class="col-12">
+          <label class="form-label" for="reward_image">Imagem (URL)</label>
+          <input class="form-control" id="reward_image" name="imagem" type="url" placeholder="https://exemplo.com/imagem.jpg" />
         </div>
         <div class="col-md-6">
-          <label class="form-label" for="reward_cost">Custo em pontos</label>
-          <input class="form-control" id="reward_cost" type="number" placeholder="100" />
+          <label class="form-label" for="reward_name">Titulo da recompensa</label>
+          <input class="form-control" id="reward_name" name="titulo" type="text" placeholder="Voucher de desconto" required />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="reward_cost">Pontos</label>
+          <input class="form-control" id="reward_cost" name="pontos" type="number" min="0" placeholder="100" required />
         </div>
         <div class="col-12">
           <label class="form-label" for="reward_description">Descricao</label>
-          <textarea class="form-control" id="reward_description" rows="4" placeholder="Detalhes da recompensa"></textarea>
+          <textarea class="form-control" id="reward_description" name="descricao" rows="4" placeholder="Detalhes da recompensa"></textarea>
         </div>
         <div class="col-12">
-          <button class="btn btn-primary" type="button">Salvar recompensa</button>
+          <div class="form-check">
+            <input class="form-check-input" id="reward_active" name="ativo" type="checkbox" checked />
+            <label class="form-check-label" for="reward_active">Recompensa ativa</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit">Salvar recompensa</button>
+        </div>
+        <div class="col-12">
+          <p class="small mb-0" id="reward_feedback" aria-live="polite"></p>
         </div>
       </form>
     </div>
   </section>
+
+  <section class="accordion mt-4" id="rewardsAccordion">
+    <div class="accordion-item border-0 shadow-sm rounded-4 overflow-hidden">
+      <h2 class="accordion-header" id="registeredRewardsHeading">
+        <button
+          class="accordion-button"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#registeredRewardsCollapse"
+          aria-expanded="true"
+          aria-controls="registeredRewardsCollapse"
+        >
+          Recompensas cadastradas
+        </button>
+      </h2>
+      <div
+        id="registeredRewardsCollapse"
+        class="accordion-collapse collapse show"
+        aria-labelledby="registeredRewardsHeading"
+        data-bs-parent="#rewardsAccordion"
+      >
+        <div class="accordion-body p-0" id="rewards_container"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="fullscreen-loader" id="full_screen_loader" hidden aria-live="assertive" aria-busy="true">
+    <div class="fullscreen-loader__content">
+      <div class="fullscreen-loader__spinner" aria-hidden="true"></div>
+      <p>Salvando recompensa...</p>
+    </div>
+  </div>
+
+  <script id="rewards_data" type="application/json">{{ serialized_rewards|tojson }}</script>
+  <script>
+    const createRewardForm = document.getElementById("create_reward_form");
+    const rewardFeedback = document.getElementById("reward_feedback");
+    const rewardsContainer = document.getElementById("rewards_container");
+    const rewardsDataElement = document.getElementById("rewards_data");
+    const fullScreenLoader = document.getElementById("full_screen_loader");
+    let rewards = JSON.parse(rewardsDataElement.textContent);
+
+    function setFeedback(message, type = "success") {
+      rewardFeedback.textContent = message;
+      rewardFeedback.classList.remove("text-danger", "text-success");
+      rewardFeedback.classList.add(type === "error" ? "text-danger" : "text-success");
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function setLoading(isLoading, message = "Salvando recompensa...") {
+      if (!fullScreenLoader) return;
+      const loaderMessage = fullScreenLoader.querySelector("p");
+      if (loaderMessage) {
+        loaderMessage.textContent = message;
+      }
+      fullScreenLoader.hidden = !isLoading;
+      document.body.classList.toggle("is-loading", isLoading);
+    }
+
+    function renderRewardsTable(items) {
+      if (!items.length) {
+        rewardsContainer.innerHTML = '<div class="p-4 text-secondary">Nenhuma recompensa cadastrada.</div>';
+        return;
+      }
+
+      const rows = items.map((reward, index) => {
+        const editFormId = `edit-reward-${index}`;
+        const statusBadge = reward.ativo ? "text-bg-success" : "text-bg-secondary";
+        const statusLabel = reward.ativo ? "Ativa" : "Inativa";
+        const toggleLabel = reward.ativo ? "Inativar" : "Ativar";
+        const toggleClass = reward.ativo ? "btn-outline-warning" : "btn-outline-success";
+        const toggleUrl = reward.ativo
+          ? `/api/recompensas/${reward.id}/inativar`
+          : `/api/recompensas/${reward.id}/ativar`;
+
+        return `
+          <tr>
+            <td>
+              <input class="form-control" type="url" name="imagem" value="${escapeHtml(reward.imagem || "")}" form="${editFormId}" aria-label="Imagem da recompensa ${escapeHtml(reward.titulo)}" />
+            </td>
+            <td>
+              <input class="form-control" type="text" name="titulo" value="${escapeHtml(reward.titulo)}" form="${editFormId}" aria-label="Titulo da recompensa ${escapeHtml(reward.titulo)}" required />
+            </td>
+            <td>
+              <input class="form-control" type="number" min="0" name="pontos" value="${escapeHtml(reward.pontos)}" form="${editFormId}" aria-label="Pontos da recompensa ${escapeHtml(reward.titulo)}" required />
+            </td>
+            <td>
+              <input class="form-control" type="text" name="descricao" value="${escapeHtml(reward.descricao || "")}" form="${editFormId}" aria-label="Descricao da recompensa ${escapeHtml(reward.titulo)}" />
+            </td>
+            <td>
+              <span class="badge ${statusBadge}">${statusLabel}</span>
+            </td>
+            <td class="text-end">
+              <form id="${editFormId}" class="d-inline ajax-reward-form" method="post" action="/api/recompensas/${reward.id}/editar">
+                <button class="btn btn-outline-primary" type="submit">Salvar</button>
+              </form>
+              <div class="cart-actions justify-content-end mt-2">
+                <form class="ajax-reward-form" method="post" action="${toggleUrl}">
+                  <button class="btn ${toggleClass}" type="submit">${toggleLabel}</button>
+                </form>
+                <form class="ajax-reward-form" method="post" action="/api/recompensas/${reward.id}/excluir">
+                  <button class="btn btn-outline-danger" type="submit">Excluir</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      rewardsContainer.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Imagem</th>
+                <th scope="col">Titulo</th>
+                <th scope="col">Pontos</th>
+                <th scope="col">Descricao</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="text-end">Acoes</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function submitAjaxForm(form) {
+      const formData = new FormData(form);
+      const requestUrl = form.dataset.apiUrl || form.action;
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = {};
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Nao foi possivel salvar a recompensa.");
+      }
+
+      rewards = Array.isArray(payload.rewards) ? payload.rewards : [];
+      renderRewardsTable(rewards);
+      setFeedback(payload.message || "Operacao realizada com sucesso.");
+    }
+
+    createRewardForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setLoading(true, "Cadastrando recompensa...");
+      try {
+        await submitAjaxForm(createRewardForm);
+        createRewardForm.reset();
+        document.getElementById("reward_active").checked = true;
+      } catch (error) {
+        setFeedback(error.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    rewardsContainer.addEventListener("submit", async (event) => {
+      const form = event.target.closest(".ajax-reward-form");
+      if (!form) return;
+
+      event.preventDefault();
+      let loadingMessage = "Salvando recompensa...";
+      if (form.action.includes("/ativar")) {
+        loadingMessage = "Ativando recompensa...";
+      } else if (form.action.includes("/inativar")) {
+        loadingMessage = "Inativando recompensa...";
+      } else if (form.action.includes("/excluir")) {
+        loadingMessage = "Excluindo recompensa...";
+      } else if (form.action.includes("/editar")) {
+        loadingMessage = "Atualizando recompensa...";
+      }
+
+      setLoading(true, loadingMessage);
+      try {
+        await submitAjaxForm(form);
+      } catch (error) {
+        setFeedback(error.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    renderRewardsTable(rewards);
+  </script>
 {% endblock %}

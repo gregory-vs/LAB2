@@ -7,25 +7,98 @@
     <div class="card-body p-4 p-md-5">
       <span class="badge text-bg-primary mb-3">Cadastrar carrinho</span>
       <h1 class="h2 fw-bold mb-3">Cadastro de carrinho</h1>
-      <p class="text-secondary mb-4">Tela inicial para registrar um novo carrinho no sistema.</p>
+      <p class="text-secondary mb-4">Registre manualmente o BLE UUID para criar um novo carrinho.</p>
 
-      <form class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label" for="cart_id">ID do carrinho</label>
-          <input class="form-control" id="cart_id" type="text" placeholder="CART-001" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="cart_location">Localizacao</label>
-          <input class="form-control" id="cart_location" type="text" placeholder="Estacionamento A" />
+      <form class="row g-3" method="post" action="{{ url_for('home.cadastrar_carrinho') }}">
+        <div class="col-12">
+          <label class="form-label" for="beacon_uuid">BLE UUID</label>
+          <input
+            class="form-control"
+            id="beacon_uuid"
+            name="beacon_uuid"
+            type="text"
+            placeholder="123e4567-e89b-12d3-a456-426614174000"
+            required
+          />
         </div>
         <div class="col-12">
-          <label class="form-label" for="cart_description">Descricao</label>
-          <textarea class="form-control" id="cart_description" rows="4" placeholder="Detalhes do carrinho"></textarea>
-        </div>
-        <div class="col-12">
-          <button class="btn btn-primary" type="button">Salvar carrinho</button>
+          <button class="btn btn-primary" type="submit">Salvar carrinho</button>
         </div>
       </form>
+    </div>
+  </section>
+
+  <section class="accordion mt-4" id="cartsAccordion">
+    <div class="accordion-item border-0 shadow-sm rounded-4 overflow-hidden">
+      <h2 class="accordion-header" id="registeredCartsHeading">
+        <button
+          class="accordion-button"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#registeredCartsCollapse"
+          aria-expanded="true"
+          aria-controls="registeredCartsCollapse"
+        >
+          Carrinhos cadastrados
+        </button>
+      </h2>
+      <div
+        id="registeredCartsCollapse"
+        class="accordion-collapse collapse show"
+        aria-labelledby="registeredCartsHeading"
+        data-bs-parent="#cartsAccordion"
+      >
+        <div class="accordion-body p-0">
+          {% if carts %}
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">BLE UUID</th>
+                    <th scope="col">Data de cadastro</th>
+                    <th scope="col" class="text-end">Acoes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for cart in carts %}
+                    <tr>
+                      <td class="fw-semibold">{{ cart.id }}</td>
+                      <td>
+                        <form
+                          class="d-flex flex-column flex-lg-row gap-2"
+                          method="post"
+                          action="{{ url_for('home.editar_carrinho', cart_id=cart.id) }}"
+                        >
+                          <input
+                            class="form-control"
+                            type="text"
+                            name="beacon_uuid"
+                            value="{{ cart.beacon_uuid }}"
+                            aria-label="BLE UUID do carrinho {{ cart.id }}"
+                            required
+                          />
+                          <button class="btn btn-outline-primary" type="submit">Salvar</button>
+                        </form>
+                      </td>
+                      <td>{{ cart.data_cadastro.strftime('%d/%m/%Y %H:%M') if cart.data_cadastro else '-' }}</td>
+                      <td class="text-end">
+                        <div class="cart-actions justify-content-end">
+                          <form method="post" action="{{ url_for('home.excluir_carrinho', cart_id=cart.id) }}">
+                            <button class="btn btn-outline-danger" type="submit">Excluir</button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="p-4 text-secondary">Nenhum carrinho cadastrado.</div>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </section>
 {% endblock %}
