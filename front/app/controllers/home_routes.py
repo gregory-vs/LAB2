@@ -2,6 +2,7 @@ import re
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
@@ -15,6 +16,7 @@ from app.services.home_service import (
 
 home_bp = Blueprint("home", __name__)
 UTC_MINUS_3 = timezone(timedelta(hours=-3))
+BEACON_EVENT_VALIDITY = timedelta(minutes=10)
 
 
 def _build_balance_upsert_stmt(document_type: str, document_value: str):
@@ -155,6 +157,51 @@ def _get_active_totem_by_slug_or_404(totem_slug: str) -> Totem:
     return totem
 
 
+def _as_aware_utc(timestamp: datetime | str) -> datetime:
+    if isinstance(timestamp, str):
+        timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+
+    if timestamp.tzinfo is None:
+        return timestamp.replace(tzinfo=timezone.utc)
+    return timestamp.astimezone(timezone.utc)
+
+
+def _validate_latest_beacon_event(totem_id: str, beacon_id: str) -> str | None:
+    latest_event = db.session.execute(
+        text(
+            """
+            SELECT status, created_at
+            FROM beacon_eventos
+            WHERE totem_id = :totem_id
+              AND beacon_id = :beacon_id
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        ),
+        {"totem_id": totem_id, "beacon_id": beacon_id},
+    ).mappings().first()
+
+    if latest_event is None:
+        return "Nenhum evento encontrado para este carrinho neste totem."
+
+    latest_status = str(latest_event["status"] or "").strip().upper()
+    if latest_status == "RETIRADO":
+        return "Este carrinho consta como retirado e nao pode ser coletado."
+
+    if latest_status != "ENTREGUE":
+        return "O ultimo status do carrinho nao permite a coleta."
+
+    created_at = latest_event["created_at"]
+    if created_at is None:
+        return "Evento do carrinho sem data de criacao."
+
+    event_created_at = _as_aware_utc(created_at)
+    if datetime.now(timezone.utc) - event_created_at > BEACON_EVENT_VALIDITY:
+        return "O evento de entrega do carrinho expirou. Escaneie um carrinho entregue nos ultimos 10 minutos."
+
+    return None
+
+
 def _render_catalogo_premios(nav_totem_slug: str = ""):
     return render_template(
         "catalogo_premios.html",
@@ -207,6 +254,10 @@ def _create_collection_submission(
     normalized_document = _normalize_document(id_type, id_number)
     if normalized_document is None:
         return "Documento inválido para o tipo selecionado.", None
+
+    beacon_error = _validate_latest_beacon_event(totem_id, cart_id)
+    if beacon_error:
+        return beacon_error, None
 
     submission = CollectionSubmission(
         documento_tipo=id_type,

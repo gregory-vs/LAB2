@@ -61,11 +61,19 @@
       <label class="field">
         <span>ID do carrinho (QR Code)</span>
         <div class="field-inline">
-          <input type="text" name="carrinho_id" placeholder="Escaneie ou digite o ID..." required />
-          <button class="btn btn-secondary icon-btn" type="button" aria-label="Abrir câmera">
+          <input
+            type="text"
+            name="carrinho_id"
+            placeholder="Escaneie o QR Code do carrinho"
+            readonly
+            aria-readonly="true"
+            required
+          />
+          <button class="btn btn-secondary icon-btn" id="cart_scan_button" type="button" aria-label="Abrir câmera">
             <span class="material-symbols-outlined">photo_camera</span>
           </button>
         </div>
+        <small class="muted" id="cart_scan_hint">Use a câmera para preencher o ID do carrinho.</small>
       </label>
 
       <label class="field">
@@ -100,19 +108,43 @@
       <p>Enviando coleta...</p>
     </div>
   </div>
+  <div class="scanner-overlay" id="cart_scanner" hidden>
+    <div class="scanner-panel" role="dialog" aria-modal="true" aria-labelledby="cart_scanner_title">
+      <div class="scanner-header">
+        <h2 id="cart_scanner_title">Escanear carrinho</h2>
+        <button class="btn btn-ghost icon-btn" id="cart_scanner_close" type="button" aria-label="Fechar câmera">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="scanner-frame">
+        <div class="scanner-camera" id="cart_scanner_camera"></div>
+        <div class="scanner-target" aria-hidden="true"></div>
+      </div>
+      <p class="scanner-status" id="cart_scanner_status">Aponte a câmera para o QR Code do carrinho.</p>
+    </div>
+  </div>
   <div class="toast-alert" id="collection_toast" role="alert" aria-live="assertive" hidden></div>
 
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     const collectionForm = document.getElementById("collection_form");
     const documentInput = document.getElementById("id_number");
     const documentHint = document.getElementById("document_hint");
     const idTypeInputs = document.querySelectorAll("input[name='id_type']");
     const cartInput = collectionForm.querySelector("input[name='carrinho_id']");
+    const cartScanButton = document.getElementById("cart_scan_button");
+    const cartScanHint = document.getElementById("cart_scan_hint");
+    const cartScanner = document.getElementById("cart_scanner");
+    const cartScannerCamera = document.getElementById("cart_scanner_camera");
+    const cartScannerClose = document.getElementById("cart_scanner_close");
+    const cartScannerStatus = document.getElementById("cart_scanner_status");
     const fullScreenLoader = document.getElementById("full_screen_loader");
     const collectionToast = document.getElementById("collection_toast");
     const todayCollectionsValue = document.getElementById("today_collections_value");
     let toastTimeoutId = null;
     let toastHideTimeoutId = null;
+    let html5QrCode = null;
+    let isScannerRunning = false;
 
     function selectedType() {
       const selected = document.querySelector("input[name='id_type']:checked");
@@ -216,6 +248,89 @@
       }, 5000);
     }
 
+    function setCartValue(rawValue) {
+      const scannedValue = rawValue.trim();
+      if (!scannedValue) return;
+
+      cartInput.value = extractCartId(scannedValue);
+      cartScanHint.textContent = "Carrinho escaneado. Use a câmera novamente para trocar.";
+      cartInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function extractCartId(scannedValue) {
+      try {
+        const parsedUrl = new URL(scannedValue);
+        return (
+          parsedUrl.searchParams.get("carrinho_id") ||
+          parsedUrl.searchParams.get("cart_id") ||
+          parsedUrl.pathname.split("/").filter(Boolean).pop() ||
+          scannedValue
+        );
+      } catch (error) {
+        return scannedValue;
+      }
+    }
+
+    async function stopCartScanner() {
+      if (html5QrCode && isScannerRunning) {
+        try {
+          await html5QrCode.stop();
+          await html5QrCode.clear();
+        } catch (error) {
+          console.warn("Erro ao fechar scanner de QR Code.", error);
+        }
+      }
+
+      isScannerRunning = false;
+      cartScanner.hidden = true;
+      document.body.classList.remove("is-loading");
+    }
+
+    async function openCartScanner() {
+      if (!window.isSecureContext) {
+        showToast("A câmera só funciona em localhost, 127.0.0.1 ou HTTPS.", "error");
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast("Este navegador não liberou acesso à câmera.", "error");
+        return;
+      }
+
+      if (!window.Html5Qrcode) {
+        showToast("Leitor de QR Code não carregou. Verifique sua internet e recarregue a página.", "error");
+        return;
+      }
+
+      try {
+        cartScanner.hidden = false;
+        document.body.classList.add("is-loading");
+        cartScannerStatus.textContent = "Abrindo câmera...";
+
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode(cartScannerCamera.id);
+        }
+
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          async (decodedText) => {
+            setCartValue(decodedText);
+            showToast("QR Code do carrinho escaneado.", "success");
+            await stopCartScanner();
+          },
+          () => {}
+        );
+
+        isScannerRunning = true;
+        cartScannerStatus.textContent = "Aponte a câmera para o QR Code do carrinho.";
+      } catch (error) {
+        console.error("Erro ao abrir scanner de QR Code.", error);
+        await stopCartScanner();
+        showToast("Não foi possível acessar a câmera. Confira a permissão no Chrome.", "error");
+      }
+    }
+
     async function submitCollection(event) {
       event.preventDefault();
 
@@ -248,6 +363,7 @@
 
         documentInput.value = "";
         cartInput.value = "";
+        cartScanHint.textContent = "Use a câmera para preencher o ID do carrinho.";
       } catch (error) {
         showToast("Erro de conexão ao enviar a coleta.", "error");
       } finally {
@@ -257,6 +373,13 @@
 
     documentInput.addEventListener("input", applyMask);
     idTypeInputs.forEach((input) => input.addEventListener("change", updateDocumentUi));
+    cartScanButton.addEventListener("click", openCartScanner);
+    cartScannerClose.addEventListener("click", stopCartScanner);
+    cartScanner.addEventListener("click", (event) => {
+      if (event.target === cartScanner) {
+        stopCartScanner();
+      }
+    });
     collectionForm.addEventListener("submit", submitCollection);
   </script>
 {% endblock %}
