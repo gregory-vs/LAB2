@@ -29,7 +29,7 @@ if not DATABASE_URL:
 
 engine = create_engine(DATABASE_URL)
 
-TOTEM_ID = "TOTEM_01"
+TOTEM_ID = "totem-H3N8P5RX"
 
 RSSI_RANGE_THRESHOLD = -75
 
