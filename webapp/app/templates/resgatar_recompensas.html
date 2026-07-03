@@ -9,7 +9,12 @@
       <h1 class="h2 fw-bold mb-3">Resgate de recompensas</h1>
       <p class="text-secondary mb-4">Busque o usuario por CPF ou passaporte para carregar os pontos e recompensas disponiveis.</p>
 
-      <form class="row g-3" id="reward_lookup_form" data-find-user-url="{{ url_for('home.buscar_usuario_recompensa') }}">
+      <form
+        class="row g-3"
+        id="reward_lookup_form"
+        data-find-user-url="{{ url_for('home.buscar_usuario_recompensa') }}"
+        data-redeem-url="{{ url_for('home.resgatar_recompensa_api') }}"
+      >
         <div class="col-12">
           <div class="btn-group id-type-toggle" role="group" aria-label="Tipo de identificacao">
             <input
@@ -73,7 +78,7 @@
           </select>
         </div>
         <div class="col-12">
-          <button class="btn btn-primary" type="button" disabled>Resgatar</button>
+          <button class="btn btn-primary" id="redeem_reward_button" type="button" disabled>Resgatar</button>
         </div>
       </form>
     </div>
@@ -95,8 +100,10 @@
     const rewardUserInput = document.getElementById("reward_user");
     const rewardPointsInput = document.getElementById("reward_points");
     const rewardChoiceSelect = document.getElementById("reward_choice");
+    const redeemRewardButton = document.getElementById("redeem_reward_button");
     const clearUserButton = document.getElementById("clear_user_button");
     const fullScreenLoader = document.getElementById("full_screen_loader");
+    let currentUserDocument = "";
 
     function selectedType() {
       const selected = document.querySelector("input[name='id_type']:checked");
@@ -139,10 +146,12 @@
     }
 
     function resetUserData() {
+      currentUserDocument = "";
       rewardUserInput.value = "";
       rewardPointsInput.value = "";
       rewardChoiceSelect.innerHTML = "<option selected value=\"\">Busque um usuario para carregar as recompensas</option>";
       rewardChoiceSelect.disabled = true;
+      redeemRewardButton.disabled = true;
     }
 
     function updateDocumentUi() {
@@ -206,6 +215,11 @@
       });
 
       rewardChoiceSelect.disabled = false;
+      updateRedeemButtonState();
+    }
+
+    function updateRedeemButtonState() {
+      redeemRewardButton.disabled = !currentUserDocument || !rewardChoiceSelect.value;
     }
 
     async function submitRewardLookup(event) {
@@ -239,7 +253,8 @@
           return;
         }
 
-        rewardUserInput.value = payload.document || "";
+        currentUserDocument = payload.document || "";
+        rewardUserInput.value = currentUserDocument;
         rewardPointsInput.value = `${payload.points || 0} pontos`;
         renderRewards(Array.isArray(payload.rewards) ? payload.rewards : []);
         rewardFeedback.textContent = "Usuario encontrado com sucesso.";
@@ -252,8 +267,59 @@
       }
     }
 
+    async function redeemSelectedReward() {
+      if (!currentUserDocument || !rewardChoiceSelect.value) {
+        updateRedeemButtonState();
+        return;
+      }
+
+      rewardFeedback.textContent = "";
+      rewardFeedback.classList.remove("text-danger", "text-success");
+
+      const formData = new FormData();
+      formData.set("id_type", selectedType());
+      formData.set("document", currentUserDocument);
+      formData.set("reward_id", rewardChoiceSelect.value);
+
+      setLoading(true);
+      try {
+        const response = await fetch(rewardLookupForm.dataset.redeemUrl, {
+          method: "POST",
+          body: formData,
+          headers: { Accept: "application/json" },
+        });
+
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = {};
+        }
+
+        if (!response.ok) {
+          rewardFeedback.textContent = payload.error || "Nao foi possivel resgatar a recompensa.";
+          rewardFeedback.classList.add("text-danger");
+          return;
+        }
+
+        currentUserDocument = payload.document || currentUserDocument;
+        rewardUserInput.value = currentUserDocument;
+        rewardPointsInput.value = `${payload.points || 0} pontos`;
+        renderRewards(Array.isArray(payload.rewards) ? payload.rewards : []);
+        rewardFeedback.textContent = payload.message || "Recompensa resgatada com sucesso.";
+        rewardFeedback.classList.add("text-success");
+      } catch (error) {
+        rewardFeedback.textContent = "Erro de conexao ao resgatar a recompensa.";
+        rewardFeedback.classList.add("text-danger");
+      } finally {
+        setLoading(false);
+      }
+    }
+
     documentInput.addEventListener("input", applyMask);
     idTypeInputs.forEach((input) => input.addEventListener("change", updateDocumentUi));
+    rewardChoiceSelect.addEventListener("change", updateRedeemButtonState);
+    redeemRewardButton.addEventListener("click", redeemSelectedReward);
     clearUserButton.addEventListener("click", clearSelectedUser);
     rewardLookupForm.addEventListener("submit", submitRewardLookup);
   </script>

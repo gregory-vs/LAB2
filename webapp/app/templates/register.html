@@ -7,7 +7,7 @@
     <div class="card shadow-sm border-0 auth-card">
       <div class="card-body p-4 p-md-5">
         <h1 class="h3 fw-bold mb-3 text-center">Register</h1>
-        <p class="text-secondary text-center mb-4">Cadastro mockado com redirecionamento para home.</p>
+        <p class="text-secondary text-center mb-4">Crie um usuario com senha de pelo menos 8 caracteres.</p>
 
         <form method="post" action="{{ url_for('home.submit_register') }}">
           <div class="mb-3">
@@ -31,8 +31,13 @@
             />
           </div>
 
-          <button class="btn btn-primary w-100" type="submit">Send</button>
+          <button class="btn btn-primary w-100" type="submit">Cadastrar</button>
         </form>
+
+        <p class="text-center mb-0 mt-4">
+          Ja tem conta?
+          <a href="{{ url_for('home.login') }}">Entrar</a>
+        </p>
       </div>
     </div>
   </section>

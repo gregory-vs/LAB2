@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -73,6 +74,7 @@ def _get_database_url() -> str:
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=5)
     SQLALCHEMY_DATABASE_URI = _get_database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}

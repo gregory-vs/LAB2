@@ -32,6 +32,11 @@
                 <a class="nav-link px-lg-3 {% if page == item.key %}active{% endif %}" href="{{ item.href }}">{{ item.label }}</a>
               {% endfor %}
             </div>
+            {% if session.get("auth_username") %}
+              <form class="ms-lg-3 mt-3 mt-lg-0" method="post" action="{{ url_for('home.logout') }}">
+                <button class="btn btn-outline-secondary btn-sm" type="submit">Sair</button>
+              </form>
+            {% endif %}
           </div>
         </div>
       </nav>

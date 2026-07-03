@@ -1,7 +1,9 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
+from app.services.auth_service import authenticate_user, create_user
 from app.services.cart_service import create_cart, delete_cart, list_carts, update_cart
 from app.services.reward_admin_service import (
     create_reward,
@@ -10,7 +12,7 @@ from app.services.reward_admin_service import (
     set_reward_active_status,
     update_reward,
 )
-from app.services.reward_service import find_reward_user
+from app.services.reward_service import find_reward_user, redeem_reward
 from app.services.totem_service import (
     create_totem,
     delete_totem,
@@ -20,6 +22,49 @@ from app.services.totem_service import (
 )
 
 home_bp = Blueprint("home", __name__)
+SESSION_DURATION = timedelta(hours=5)
+PUBLIC_ENDPOINTS = {
+    "home.login",
+    "home.submit_login",
+    "home.register",
+    "home.submit_register",
+    "static",
+}
+
+
+def _session_expires_at() -> datetime:
+    return datetime.now(timezone.utc) + SESSION_DURATION
+
+
+def _is_authenticated() -> bool:
+    user_id = session.get("auth_user_id")
+    expires_at = session.get("auth_expires_at")
+    if not user_id or not expires_at:
+        return False
+
+    try:
+        expires_at_datetime = datetime.fromisoformat(expires_at)
+    except ValueError:
+        return False
+
+    return datetime.now(timezone.utc) < expires_at_datetime
+
+
+@home_bp.before_app_request
+def require_login():
+    endpoint = request.endpoint
+    if endpoint in PUBLIC_ENDPOINTS or (endpoint and endpoint.startswith("static")):
+        return None
+
+    if _is_authenticated():
+        return None
+
+    session.clear()
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Sessao expirada. Faca login novamente."}), 401
+
+    flash("Faca login para acessar esta pagina.", "error")
+    return redirect(url_for("home.login", next=request.full_path))
 
 
 def _serialize_totem(totem) -> dict[str, str | bool]:
@@ -94,12 +139,40 @@ def home():
 
 @home_bp.get("/login")
 def login():
+    if _is_authenticated():
+        return redirect(url_for("home.home"))
+
     return render_template("login.html", page="login", show_nav=False)
 
 
 @home_bp.post("/login")
 def submit_login():
-    return redirect(url_for("home.home"))
+    username = request.form.get("login", "").strip()
+    password = request.form.get("password", "")
+    user = authenticate_user(username, password)
+
+    if not user:
+        flash("Login ou senha invalidos.", "error")
+        return redirect(url_for("home.login"))
+
+    session.clear()
+    session.permanent = True
+    session["auth_user_id"] = int(user.id)
+    session["auth_username"] = user.username
+    session["auth_expires_at"] = _session_expires_at().isoformat()
+
+    next_url = request.form.get("next") or url_for("home.home")
+    if not next_url.startswith("/"):
+        next_url = url_for("home.home")
+
+    return redirect(next_url)
+
+
+@home_bp.post("/logout")
+def logout():
+    session.clear()
+    flash("Voce saiu da aplicacao.", "success")
+    return redirect(url_for("home.login"))
 
 
 @home_bp.get("/register")
@@ -109,7 +182,17 @@ def register():
 
 @home_bp.post("/register")
 def submit_register():
-    return redirect(url_for("home.home"))
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
+    password_confirmation = request.form.get("password_confirmation", "")
+
+    error_message = create_user(username, password, password_confirmation)
+    if error_message:
+        flash(error_message, "error")
+        return redirect(url_for("home.register"))
+
+    flash("Usuario cadastrado com sucesso. Faca login para continuar.", "success")
+    return redirect(url_for("home.login"))
 
 
 @home_bp.route("/cadastrar-carrinho", methods=["GET", "POST"])
@@ -303,6 +386,24 @@ def buscar_usuario_recompensa():
         return jsonify({"error": error_message}), 400
 
     return jsonify(user)
+
+
+@home_bp.post("/api/resgatar-recompensas")
+def resgatar_recompensa_api():
+    id_type = request.form.get("id_type", "cpf").strip().lower()
+    document = request.form.get("document", "").strip()
+    reward_id = request.form.get("reward_id", "").strip()
+
+    user, error_message = redeem_reward(id_type, document, reward_id)
+    if error_message:
+        return jsonify({"error": error_message}), 400
+
+    return jsonify(
+        {
+            "message": "Recompensa resgatada com sucesso.",
+            **user,
+        }
+    )
 
 
 @home_bp.get("/cadastrar-recompensas")
