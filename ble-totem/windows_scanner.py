@@ -46,7 +46,7 @@ TOTEM_INGEST_URL = "http://127.0.0.1:8000/ingest"
 # Exemplo no .env: ALLOWED_BEACONS=12345678-1234-1234-1234-1234567890ab,abcdef12-3456-7890-abcd-ef1234567890
 ALLOWED_BEACONS_STR = os.getenv(
     "ALLOWED_BEACONS", 
-    "12345678-1234-1234-1234-1234567890ab,12345678-1234-1234-1234-4444444444ab"
+    "12345678-1234-1234-1234-1234567890ab"
 )
 
 # Converte a string em um Set (conjunto) para busca ultra-rápida, ignorando espaços e padronizando para minúsculo
@@ -336,7 +336,7 @@ async def main() -> None:
         f"timeout={PRESENCE_TIMEOUT_SECONDS}s, "
         f"forwarding={'ON' if ENABLE_TOTEM_FORWARDING else 'OFF'}."
     )
-    print(f"Filtro ativo: Rastreiando {len(ALLOWED_BEACONS)} carrinho(s).")
+    print(f"Filtro ativo: Rastreando {len(ALLOWED_BEACONS)} carrinho(s).")
 
     watchdog = asyncio.create_task(_presence_watchdog())
     sender = None
